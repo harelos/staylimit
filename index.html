@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1218">
+<title>Overstay — Know your days before they run out.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E1218;--p1:#161C24;--p2:#1C232D;--line:#2A323D;--ink:#EEF2F7;--mut:#8B96A5;--dim:#556173;--acc:#3D7DE0;--warn:#E8A33D;--bad:#D65B5B;--good:#3FAE6B}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;min-height:100vh;min-height:100dvh}
+.wrap{max-width:440px;margin:0 auto;padding:24px 20px 44px}
+.mono{font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+h1{font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.08}
+.card{background:var(--p1);border:1px solid var(--line);border-radius:14px;padding:18px}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.btn:active{transform:scale(.98)}
+.btn-acc{background:var(--acc);color:#0A1220}
+.btn-ghost{background:var(--p2);color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:13px;padding:11px}
+.btn-danger{background:transparent;color:var(--bad);border:1px solid var(--bad);font-weight:600;font-size:12.5px;padding:9px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;outline:none}
+input:focus,select:focus{border-color:var(--acc)}
+.hidden{display:none!important}
+label{display:block;font-size:12px;color:var(--mut);margin:13px 0 6px;font-weight:500}
+.big{font-family:'Space Mono',monospace;font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.big span{font-size:19px;color:var(--mut);font-weight:400}
+.bar{height:10px;border-radius:6px;background:var(--p2);overflow:hidden;margin:14px 0 6px}
+.bar-fill{height:100%;border-radius:6px;background:var(--acc);transition:width .3s}
+.bar-fill.warn{background:var(--warn)}
+.bar-fill.bad{background:var(--bad)}
+.status{font-size:13px;color:var(--mut);line-height:1.5}
+.status b{color:var(--ink)}
+.status.bad-t{color:var(--bad)}
+.status.warn-t{color:var(--warn)}
+.trip{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.trip:last-child{border:none}
+.trip-d{font-size:13.5px}
+.trip-n{font-size:10.5px;color:var(--dim);margin-top:2px}
+.trip-x{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:4px 8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.zone-tab{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--p2);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.zone-tab.sel{border-color:var(--acc);background:linear-gradient(135deg,var(--acc)26,var(--acc)0a);color:var(--acc)}
+.zone-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--p2);border:1px solid var(--acc);color:var(--acc);padding:10px 20px;border-radius:10px;font-family:'Space Mono',monospace;font-size:12px;z-index:200;text-align:center;max-width:88%}
+.modal-ov{position:fixed;inset:0;z-index:300;background:rgba(5,6,9,.7);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-ov.open{opacity:1;pointer-events:auto}
+.modal{width:100%;max-width:440px;background:var(--bg);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(16px);transition:transform .22s}
+.modal-ov.open .modal{transform:translateY(0)}
+.check{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--mut);margin-top:4px}
+</style>
+<link rel="manifest" href="manifest.json">
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js")</script>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">OVERSTAY</div>
+<h1 style="margin:8px 0 6px">Know your days<br><span style="color:var(--acc)">before they run out.</span></h1>
+<p style="color:var(--mut);font-size:13.5px;line-height:1.55;margin-bottom:16px">Log your trips, Overstay does the rolling-window math. See exactly how many days you have left, and the date you're clear to go back.</p>
+
+<div class="zone-tabs" id="zoneTabs"></div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div class="big"><span id="usedNum">0</span><span> / <span id="maxNum">90</span> days</span></div>
+      <div class="status" id="statusLine" style="margin-top:6px">Add a trip to get started.</div>
+    </div>
+  </div>
+  <div class="bar"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+  <div class="status" id="windowLine" style="font-size:11px">In any rolling <span id="winDays">180</span>-day period</div>
+</div>
+
+<div style="height:10px"></div>
+<button class="btn btn-acc" onclick="openTripModal()">+ Log a trip</button>
+<div style="height:8px"></div>
+<button class="btn btn-ghost" onclick="openZoneModal()">+ Track another zone</button>
+
+<div style="height:12px"></div>
+<div class="card">
+  <div class="eyebrow" style="color:var(--dim);margin-bottom:2px">TRIPS IN THIS ZONE</div>
+  <div id="trips"></div>
+  <div id="notrips" style="color:var(--mut);font-size:13px;padding:10px 0">No trips logged yet.</div>
+</div>
+
+<p style="color:var(--dim);font-size:10.5px;line-height:1.6;margin-top:16px;text-align:center">Overstay is a personal record-keeping tool, not immigration, tax or legal advice. Rules vary by country and change over time — always verify against official sources before you travel.</p>
+
+</div>
+
+<!-- TRIP MODAL -->
+<div class="modal-ov" id="tripModal">
+  <div class="modal">
+    <div class="eyebrow" style="margin-bottom:10px">LOG A TRIP</div>
+    <label>Entry date</label>
+    <input type="date" id="t-start">
+    <label>Exit date</label>
+    <input type="date" id="t-end">
+    <div class="check"><input type="checkbox" id="t-ongoing" onchange="document.getElementById('t-end').disabled=this.checked"> Still there — no exit date yet</div>
+    <div style="height:14px"></div>
+    <button class="btn btn-acc" onclick="saveTrip()">Save trip</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-ghost" onclick="closeModal('tripModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ZONE MODAL -->
+<div class="modal-ov" id="zoneModal">
+  <div class="modal">
+    <div class="eyebrow" style="margin-bottom:10px">TRACK A ZONE</div>
+    <label>Preset</label>
+    <select id="z-preset" onchange="onPresetChange()">
+      <option value="schengen">Schengen Area — 90 / 180 days</option>
+      <option value="generic">Generic — 183 / 365 days</option>
+      <option value="custom">Custom rule</option>
+    </select>
+    <label>Zone name</label>
+    <input id="z-name" placeholder="e.g. Schengen Area">
+    <div class="row2">
+      <div><label>Max days</label><input id="z-max" type="number" inputmode="numeric" value="90"></div>
+      <div><label>Window (days)</label><input id="z-window" type="number" inputmode="numeric" value="180"></div>
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn btn-acc" onclick="saveZone()">Add zone</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-ghost" onclick="closeModal('zoneModal')">Cancel</button>
+  </div>
+</div>
+
+<script>
+const store={m:{},get(k,d){try{const v=localStorage.getItem('ov_'+k);return v!==null?JSON.parse(v):d}catch(e){return k in this.m?this.m[k]:d}},set(k,v){try{localStorage.setItem('ov_'+k,JSON.stringify(v))}catch(e){this.m[k]=v}}};
+
+let zones=store.get('zones',null);
+if(!zones){zones=[{id:'z1',name:'Schengen Area',maxDays:90,windowDays:180,trips:[]}]}
+let activeZone=store.get('activeZone',zones[0].id);
+
+function save(){store.set('zones',zones);store.set('activeZone',activeZone)}
+function dateOnly(iso){const d=new Date(iso+'T00:00:00');return d}
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
+function daysBetween(a,b){return Math.round((b-a)/86400000)}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmtD(iso){return new Date(iso+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
+
+function overlapDays(s,e,winS,winE){
+  const os=Math.max(s,winS), oe=Math.min(e,winE);
+  if(oe<os)return 0;
+  return daysBetween(os,oe)+1;
+}
+function usedInWindow(zone,refDate){
+  const winE=refDate, winS=addDays(refDate,-(zone.windowDays-1));
+  let used=0;
+  for(const t of zone.trips){
+    const s=dateOnly(t.start);
+    const e=t.end?dateOnly(t.end):dateOnly(todayStr());
+    used+=overlapDays(s,e,winS,winE);
+  }
+  return used;
+}
+function nextClearDate(zone){
+  const today=dateOnly(todayStr());
+  for(let i=0;i<zone.windowDays+5;i++){
+    const ref=addDays(today,i);
+    if(usedInWindow(zone,ref)<zone.maxDays)return ref;
+  }
+  return null;
+}
+
+function getZone(){return zones.find(z=>z.id===activeZone)||zones[0]}
+
+function renderZoneTabs(){
+  document.getElementById('zoneTabs').innerHTML=zones.map(z=>
+    `<div class="zone-tab ${z.id===activeZone?'sel':''}" onclick="switchZone('${z.id}')">${esc(z.name)}</div>`).join('');
+}
+function switchZone(id){activeZone=id;save();renderAll()}
+function renderAll(){
+  renderZoneTabs();
+  const z=getZone();
+  const today=dateOnly(todayStr());
+  const used=usedInWindow(z,today);
+  const remain=z.maxDays-used;
+  document.getElementById('usedNum').textContent=Math.min(used,z.maxDays);
+  document.getElementById('maxNum').textContent=z.maxDays;
+  document.getElementById('winDays').textContent=z.windowDays;
+  const pct=Math.min(100,(used/z.maxDays)*100);
+  const fill=document.getElementById('barFill');
+  fill.style.width=pct+'%';
+  fill.className='bar-fill'+(used>=z.maxDays?' bad':used>=z.maxDays*0.8?' warn':'');
+  const statusEl=document.getElementById('statusLine');
+  if(used>=z.maxDays){
+    const clear=nextClearDate(z);
+    statusEl.className='status bad-t';
+    statusEl.innerHTML='<b>Over the limit.</b> Based on logged trips, you\'re clear again on <b>'+(clear?fmtD(clear.getFullYear()+'-'+String(clear.getMonth()+1).padStart(2,'0')+'-'+String(clear.getDate()).padStart(2,'0')):'—')+'</b>.';
+  } else if(remain<=z.maxDays*0.2){
+    statusEl.className='status warn-t';
+    statusEl.innerHTML='<b>'+remain+' days left</b> in the current window. Cutting it close.';
+  } else {
+    statusEl.className='status';
+    statusEl.innerHTML='<b>'+remain+' days left</b> in the current window.';
+  }
+  renderTrips();
+}
+function renderTrips(){
+  const z=getZone();
+  const trips=[...z.trips].sort((a,b)=>b.start.localeCompare(a.start));
+  document.getElementById('notrips').classList.toggle('hidden',trips.length>0);
+  document.getElementById('trips').innerHTML=trips.map(t=>{
+    const dur=daysBetween(dateOnly(t.start),t.end?dateOnly(t.end):dateOnly(todayStr()))+1;
+    return `<div class="trip"><div><div class="trip-d">${fmtD(t.start)} → ${t.end?fmtD(t.end):'ongoing'}</div><div class="trip-n">${dur} day${dur===1?'':'s'}</div></div><button class="trip-x" onclick="delTrip('${t.id}')">×</button></div>`;
+  }).join('');
+}
+function delTrip(id){const z=getZone();z.trips=z.trips.filter(t=>t.id!==id);save();renderAll()}
+
+function openTripModal(){document.getElementById('t-start').value=todayStr();document.getElementById('t-end').value=todayStr();document.getElementById('t-end').disabled=false;document.getElementById('t-ongoing').checked=false;document.getElementById('tripModal').classList.add('open')}
+function saveTrip(){
+  const start=document.getElementById('t-start').value;
+  const ongoing=document.getElementById('t-ongoing').checked;
+  const end=ongoing?null:document.getElementById('t-end').value;
+  if(!start){toast('PICK AN ENTRY DATE');return}
+  if(end&&end<start){toast('EXIT IS BEFORE ENTRY');return}
+  const z=getZone();
+  z.trips.push({id:'t'+Date.now(),start,end});
+  save();closeModal('tripModal');renderAll();
+  toast('TRIP LOGGED');
+  if(typeof GK!=='undefined')GK.win();
+}
+function openZoneModal(){
+  const freeLimitReached=zones.length>=1&&!(typeof Billing!=='undefined'&&Billing.isPro());
+  if(freeLimitReached){if(typeof Billing!=='undefined')Billing.openPaywall('zone_limit');return}
+  document.getElementById('z-preset').value='schengen';onPresetChange();
+  document.getElementById('zoneModal').classList.add('open');
+}
+function onPresetChange(){
+  const p=document.getElementById('z-preset').value;
+  if(p==='schengen'){document.getElementById('z-name').value='Schengen Area';document.getElementById('z-max').value=90;document.getElementById('z-window').value=180}
+  else if(p==='generic'){document.getElementById('z-name').value='';document.getElementById('z-max').value=183;document.getElementById('z-window').value=365}
+  else {document.getElementById('z-name').value='';document.getElementById('z-max').value=90;document.getElementById('z-window').value=180}
+}
+function saveZone(){
+  const name=(document.getElementById('z-name').value||'').trim()||'New zone';
+  const maxDays=parseInt(document.getElementById('z-max').value)||90;
+  const windowDays=parseInt(document.getElementById('z-window').value)||180;
+  const id='z'+Date.now();
+  zones.push({id,name,maxDays,windowDays,trips:[]});
+  activeZone=id;save();closeModal('zoneModal');renderAll();
+  toast('ZONE ADDED');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+
+document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('open')}));
+renderAll();
+</script>
+<script src="billing.js"></script>
+<script>
+const GK_CONFIG={app:'Overstay',pkg:'com.tigerbrandsglobal.staylimit',accent:'#3D7DE0',bg:'#0E1218',ink:'#EEF2F7',
+  onboard:[{h:'Never guess your day count again',p:'Log each trip\'s entry and exit date. Overstay runs the rolling-window math for you, instantly.'},{h:'Track more than one zone',p:'Splitting time across Schengen, a tax-residency window, or any other day-limit rule? Track each one side by side.'}],askAfterWins:1};
+const GK={
+  s:{get(k,d){try{const v=localStorage.getItem('gk_'+GK_CONFIG.app+'_'+k);return v!==null?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('gk_'+GK_CONFIG.app+'_'+k,JSON.stringify(v))}catch(e){}}},
+  css(){const c=GK_CONFIG;const st=document.createElement('style');
+    st.textContent=`.gk-ov{position:fixed;inset:0;background:${c.bg}F2;z-index:900;display:flex;align-items:center;justify-content:center;padding:26px;backdrop-filter:blur(4px)}
+.gk-card{background:${c.bg};border:1px solid ${c.accent}66;border-radius:16px;padding:26px 22px;max-width:360px;width:100%;color:${c.ink};font-family:system-ui,sans-serif;box-shadow:0 20px 60px -20px rgba(0,0,0,.45)}
+.gk-h{font-size:21px;font-weight:700;margin-bottom:8px;line-height:1.15}
+.gk-p{font-size:14px;line-height:1.6;opacity:.75;margin-bottom:18px}
+.gk-btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;background:${c.accent};color:${c.bg};font-size:15px;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif}
+.gk-ghost{background:transparent;color:${c.ink};opacity:.55;border:none;width:100%;padding:12px;font-size:13px;cursor:pointer;font-family:system-ui,sans-serif}
+.gk-dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+.gk-dot{width:7px;height:7px;border-radius:50%;background:${c.ink};opacity:.25}
+.gk-dot.on{background:${c.accent};opacity:1}
+.gk-foot{text-align:center;padding:22px 0 6px;font-family:monospace;font-size:10.5px;letter-spacing:.08em}
+.gk-foot a{color:${c.accent};text-decoration:none;opacity:.85}`;
+    document.head.appendChild(st)},
+  onboard(){if(GK.s.get('onboarded',false))return;
+    let i=0;const ov=document.createElement('div');ov.className='gk-ov';
+    const render=()=>{const step=GK_CONFIG.onboard[i];
+      ov.innerHTML=`<div class="gk-card"><div class="gk-dots">${GK_CONFIG.onboard.map((_,j)=>`<div class="gk-dot ${j===i?'on':''}"></div>`).join('')}</div><div class="gk-h">${step.h}</div><div class="gk-p">${step.p}</div><button class="gk-btn" id="gk-next">${i<GK_CONFIG.onboard.length-1?'Next':"Let's go"}</button></div>`;
+      ov.querySelector('#gk-next').onclick=()=>{i++;if(i>=GK_CONFIG.onboard.length){GK.s.set('onboarded',true);ov.remove()}else render()}};
+    render();document.body.appendChild(ov)},
+  win(){const wins=GK.s.get('wins',0)+1;GK.s.set('wins',wins);
+    const state=GK.s.get('review','pending');
+    if(state==='done'||state==='never')return;
+    const threshold=state==='later'?GK.s.get('nextAsk',999):GK_CONFIG.askAfterWins;
+    if(wins>=threshold)setTimeout(()=>GK.gate(wins),900)},
+  gate(wins){const ov=document.createElement('div');ov.className='gk-ov';
+    ov.innerHTML=`<div class="gk-card"><div class="gk-h">Is ${GK_CONFIG.app} actually helping you?</div><div class="gk-p">Honest answer — it decides what I build next.</div><button class="gk-btn" id="gk-yes">Yes, it's working</button><button class="gk-ghost" id="gk-no">Not really</button></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#gk-yes').onclick=()=>{
+      ov.querySelector('.gk-card').innerHTML=`<div class="gk-h">That's the goal 🤝</div><div class="gk-p">A 30-second review is what keeps a free, no-ads app alive on the Play Store. Would you leave one?</div><button class="gk-btn" id="gk-rate">Leave a review</button><button class="gk-ghost" id="gk-later">Maybe later</button>`;
+      ov.querySelector('#gk-rate').onclick=()=>{GK.s.set('review','done');window.open('market://details?id='+GK_CONFIG.pkg);ov.remove()};
+      ov.querySelector('#gk-later').onclick=()=>{const again=GK.s.get('review','pending')==='later';GK.s.set('review',again?'never':'later');GK.s.set('nextAsk',wins+10);ov.remove()}};
+    ov.querySelector('#gk-no').onclick=()=>{GK.s.set('review','never');
+      ov.querySelector('.gk-card').innerHTML=`<div class="gk-h">Tell me what's wrong.</div><div class="gk-p">I read every email and ship fixes fast. What's not working for you?</div><button class="gk-btn" id="gk-mail">Email the developer</button><button class="gk-ghost" id="gk-skip">Skip</button>`;
+      ov.querySelector('#gk-mail').onclick=()=>{GK.feedback('Something is not working for me');ov.remove()};
+      ov.querySelector('#gk-skip').onclick=()=>ov.remove()}},
+  feedback(subject){location.href='mailto:support@tigerbrandsglobal.com?subject='+encodeURIComponent('['+GK_CONFIG.app+'] '+(subject||'Feedback'))+'&body='+encodeURIComponent('App: '+GK_CONFIG.app+'\n\n')},
+  footer(){const f=document.createElement('div');f.className='gk-foot';
+    f.innerHTML=`<a href="#" onclick="GK.feedback();return false">FEEDBACK & IDEAS → SUPPORT@TIGERBRANDSGLOBAL.COM</a>`;
+    (document.querySelector('.wrap')||document.body).appendChild(f)},
+  offer(){},
+  init(){GK.css();GK.footer();GK.onboard()}
+};
+GK.init();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Overstay — Know Your Days Before They Run Out",
+  "short_name": "Overstay",
+  "description": "Log your trips and let Overstay run the rolling-window day-count math — Schengen 90/180 or any other day-limit rule. See days left and your next clear date.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1218",
+  "theme_color": "#0E1218",
+  "categories": ["travel", "productivity"],
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
